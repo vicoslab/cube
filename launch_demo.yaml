@@ -1,0 +1,48 @@
+environment:
+    DEMO_GUI_FOLDER: /home/vicosdemo/vicos_demo_gui-main
+    PYTHONEXEC: "/home/vicosdemo/demo/bin/python3.10"
+    DOCKEREXEC: "docker"
+    BUS: "/tmp/echo.sock"
+plugins:
+    - echolib.ignition.Mapping
+    - docker
+programs:
+    router:
+        required: True
+        command: ${PYTHONEXEC} -m echolib
+    camera: 
+        required: True
+        depends:
+           - router
+        docker:
+            image: camerafeed_allied:v1
+            volumes:
+                - ${DEMO_GUI_FOLDER}/cameras/allied_vision/config/camera_allied.json:/opt/config/camera0.json
+                - /tmp/echo.sock:/tmp/echo.sock
+            devices:
+                - /dev/bus/usb/002
+        console: True
+        command: ""
+        remap:
+            camera_stream_0: camera0
+    manager:
+        required: True
+        depends:
+           - router
+           - camera
+        directory: "${DEMO_GUI_FOLDER}"
+        command: ${PYTHONEXEC} -u docker_manager.py
+        console: True
+        environment:
+            PYTHONPATH: "${DEMO_GUI_FOLDER}"
+    gui:
+        required: True
+        command: ${PYTHONEXEC} -u gui_main.py
+        directory: "${DEMO_GUI_FOLDER}"
+        depends:
+           - router
+           - manager
+        console: True
+        environment:
+            PYTHONPATH: "${DEMO_GUI_FOLDER}"
+    
