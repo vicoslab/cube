@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
-DEMO_GUI_FOLDER=/home/vicosdemo/vicos_demo_gui-main
-DEMO_GUI_VIRTENV=/home/vicosdemo/demo
+VICOS_CUBE_VIRTENV=/home/vicosdemo/demo
 
-# activate python virtenv
-source $DEMO_GUI_VIRTENV/bin/activate
+# set VICOS_CUBE_GUI_DIR to the directory of this script
+export VICOS_CUBE_GUI_DIR="$(dirname "$(readlink -f "$0")")"
 
 # start DEMO using ignition
-python -m ignition $DEMO_GUI_FOLDER/launch_demo.yaml
+python -m ignition $VICOS_CUBE_GUI_DIR/launch_demo.yaml
 
 # Clean up: stop and then remove any unclosed containers
 echo ""
