@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-VICOS_CUBE_VIRTENV=/home/vicosdemo/demo
-
 # set VICOS_CUBE_GUI_DIR to the directory of this script
 export VICOS_CUBE_GUI_DIR="$(dirname "$(readlink -f "$0")")"
+export VICOS_CUBE_VIRTENV=/home/vicosdemo/demo
+
+source $VICOS_CUBE_VIRTENV/bin/activate
 
 # start DEMO using ignition
 python -m ignition $VICOS_CUBE_GUI_DIR/launch_demo.yaml
