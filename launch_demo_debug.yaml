@@ -32,12 +32,13 @@ programs:
            - router
         console: True
         command: "docker run -it -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ${VICOS_CUBE_GUI_DIR}/config/kinect_azure.py:/opt/config.py  -v /tmp/echo.sock:/tmp/echo.sock --device /dev/bus/usb:/dev/bus/usb  --gpus 'all,\"capabilities=compute,utility,graphics\"' camera-kinect_azure"
-    camera_kinect_v2: 
-        required: False
-        depends:
-           - router
-        console: True
-        command: "docker run -it -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /tmp/echo.sock:/tmp/echo.sock --device /dev/bus/usb:/dev/bus/usb  camera-kinect2"    
+#    camera_kinect_v2: 
+#        required: False
+#        depends:
+#           - router
+#        console: True
+#        #command: ""
+#        command: "docker run -it -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /tmp/echo.sock:/tmp/echo.sock --device /dev/bus/usb:/dev/bus/usb  camera-kinect2"    
     manager:
         required: True
         depends:
