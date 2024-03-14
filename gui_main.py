@@ -19,6 +19,11 @@ class State():
 
         self.echolib_handler = EcholibHandler()
 
+        self.default_camera_aspect_ratio = 4024.0/3036.0
+
+    def get_aspect_ratio(self) -> float:
+        return self.default_camera_aspect_ratio
+    
 def load_demos(root: str = "./demos") -> dict:
 
     demos = {}
@@ -76,9 +81,7 @@ def load_demos(root: str = "./demos") -> dict:
 
     return dict(sorted(demos.items(), key = lambda x: x[1]["cfg"]["highlight"]))
 
-def demo_scene_wrapper(window_aspect_ratio: float, demo_component: dict) -> DisplayTexture:
-
-    camera_aspect_ratio = 4024.0/3036.0
+def demo_scene_wrapper(window_aspect_ratio: float, demo_component: dict, camera_aspect_ratio: float = 4024.0/3036.0  ) -> DisplayTexture:
 
     in_animation = AnimationList(
         transform = ("position", [0.5, 0.0]),
@@ -197,7 +200,6 @@ def demo_video_scene(aspect_ratio: float, video: Video, play: np.array, pause: n
 
 def scene_primary(windowWidth: int, window_height: int, application_state: State, font: dict) -> Element:
     
-    camera_aspect_ratio = 4024.0/3036.0
 
     demos = load_demos()
     demo_videos = {}
@@ -327,7 +329,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         def get_zoom(gui: Gui, state: State):
 
             zoom_margin_y = 800
-            zoom_maring_x = np.int32(np.floor(zoom_margin_y/camera_aspect_ratio))
+            zoom_maring_x = np.int32(np.floor(zoom_margin_y/application_state.get_aspect_ratio()))
 
             image = state.echolib_handler.get_camera_stream()
 
@@ -340,14 +342,14 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
             calibration_live_feed_container = Container(
                 position = position,
-                scale    = [scale/camera_aspect_ratio, scale],
+                scale    = [scale/application_state.get_aspect_ratio(), scale],
                 colour = [1.0, 1.0, 1.0, 0.8],
                 id = f"calibration_display_container_ {id}") 
 
             calibration_display_live_feed = DisplayTexture(
                 position = [0.1, 0.07],
-                scale    = [(scale - 0.01)/camera_aspect_ratio, scale - 0.05],
-                aspect = camera_aspect_ratio,
+                scale    = [(scale - 0.01)/application_state.get_aspect_ratio(), scale - 0.05],
+                aspect = application_state.get_aspect_ratio(),
                 id = f"calibration_display_{id}",
                 get_texture = get_texture)
 
@@ -770,7 +772,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         if display_screen.active_demo is None:
 
-            display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters)), active_demo_button = button)
+            display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
             docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
             custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
@@ -798,7 +800,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
                 docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
                 custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
 
-                display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters)), active_demo_button = button)
+                display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
                 button.set_colour(colour = vicos_gray)
 
