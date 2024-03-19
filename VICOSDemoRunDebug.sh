@@ -7,6 +7,8 @@ export VICOS_CUBE_VIRTENV=/home/vicosdemo/demo
 
 source $VICOS_CUBE_VIRTENV/bin/activate
 
+xhost +local:docker
+
 # start DEMO using ignition
 python -m ignition $VICOS_CUBE_GUI_DIR/launch_demo_debug.yaml
 

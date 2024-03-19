@@ -27,11 +27,11 @@ programs:
         remap:
             camera_stream_0: camera0
     camera_kinect_azure: 
-        required: False
+        required: True
         depends:
            - router
         console: True
-        command: "docker run -it -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ${VICOS_CUBE_GUI_DIR}/config/kinect_azure.py:/opt/config.py  -v /tmp/echo.sock:/tmp/echo.sock --device /dev/bus/usb:/dev/bus/usb  --gpus 'all,\"capabilities=compute,utility,graphics\"' camera-kinect_azure"
+        command: "docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ${VICOS_CUBE_GUI_DIR}/config/kinect_azure.py:/opt/config.py  -v /tmp/echo.sock:/tmp/echo.sock --device /dev/bus/usb:/dev/bus/usb  --gpus 'all,\"capabilities=compute,utility,graphics\"' camera-kinect_azure"
 #    camera_kinect_v2: 
 #        required: False
 #        depends:
@@ -44,6 +44,7 @@ programs:
         depends:
            - router
            - camera
+           - camera_kinect_azure
         directory: "${VICOS_CUBE_GUI_DIR}"
         command: ${PYTHONEXEC} -u docker_manager.py
         console: True
