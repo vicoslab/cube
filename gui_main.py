@@ -270,6 +270,32 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
     header_bar.set_depth(depth = display_screen.properties[0] - 0.02)
 
+    _drawer_close_animation_directions = {
+        "up": np.array([0.0, -1.0]),
+        "down": np.array([0.0, 1.0]),
+        "left": np.array([-1.0, 0.0]),
+        "right": np.array([1.0, 0.0])
+    }
+    def setup_drawer_close_animation (drawer: DrawerMenu, drawer_container: Container, id: string, direction: string):
+        # Since animations don't seem to work with drawers, we move the container
+        initial_position = drawer_container.position.copy()
+        if direction not in _drawer_close_animation_directions:
+            raise ValueError(f"Invalid direction: {direction}.")
+        dxy = _drawer_close_animation_directions[direction].copy()
+
+        def on_end (c, g, u):
+            drawer.open = False
+            drawer.on_close(None,None)
+            drawer.position = drawer.position_closed.copy()
+            drawer_container.position = initial_position.copy()
+            drawer.update_geometry(parent = None)
+            print("Drawer closed")
+        drawer_container.animations[id] = AnimationScalar(
+            transform = ("position", dxy),
+            on_end    = on_end,
+            duration  = 0.5,
+            id        = id)
+
     drawer_menu = DrawerMenu(
         position = [0.9, header_height],
         scale    = [1.0, 1.0 - header_height],
@@ -281,12 +307,16 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         scale = [0.35, 1.0 - header_height],
         colour = vicos_red,
         id = "drawer_menu_container")
+    setup_drawer_close_animation(drawer_menu, drawer_menu_container, "close", "right")
     drawer_menu_container.depends_on(element = drawer_menu)
 
     def calibration_on_grab(component, gui: Gui):
 
         if len(component.dependent_components[0].dependent_components) > 0:
             return
+
+        if drawer_menu.open:
+            drawer_menu_container.animation_play("close")
 
         for c in create_calibration_menu():
             c.depends_on(element = component.dependent_components[0])
@@ -473,6 +503,8 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             aspect_ratio = aspect_ratio,
             get_range = slider_awb_get_range,
             id = "range_slider_awb")
+        print("Slider AWB range: ", slider_awb_get_range(slider_awb, application_state))
+        slider_awb.selected_value = 4.20
         slider_awb.circle.animations = {slider_awb_to_red.id: slider_awb_to_red, slider_awb_to_white.id: slider_awb_to_white}
 
         slider_ax = RangeSlider(
@@ -626,8 +658,8 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
     # Calibration drawer is going to be drawn over hint
     # and over the demo drawer menu
-    drawer_menu_calibration.depends_on(element = display_screen)
     drawer_menu.depends_on(element = display_screen)
+    drawer_menu_calibration.depends_on(element = display_screen)
 
     #### Construct demos ####
 
