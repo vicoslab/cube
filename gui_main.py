@@ -6,6 +6,7 @@ import glfw
 
 from opengl_gui.gui_components import *
 from opengl_gui.gui_helper     import *
+from PIL import Image
 
 from gui_echolib import EcholibHandler
 
@@ -213,11 +214,16 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
     for d in demos:
         video = Video(path = demos[d]["cfg"]["video"], loop = True)
         demo_videos[d] = video
-        demo_icons[d] = rasterize_svg(
-            path = demos[d]["cfg"]["icon"],
-            width = 512,
-            height = 512)
-
+        icon_path = demos[d]["cfg"]["icon"]
+        if icon_path.endswith(".svg"):
+            demo_icons[d] = rasterize_svg(
+                path = icon_path,
+                width = icon_width,
+                height = icon_height)
+        elif icon_path.endswith(".png"):
+            demo_icons[d] = np.array(Image.open(icon_path))[:,:,3].astype(np.uint8)
+        else:
+            raise ValueError(f"Icon format not supported: {icon_path}")
 
     video_icon = rasterize_svg(path = "./res/icons/video-solid.svg",          width = icon_width*1.0, height = icon_height*1.0)
     point_icon = rasterize_svg(path = "./res/icons/hand-pointer.svg",         width = icon_width*0.7, height = icon_height*0.7)
