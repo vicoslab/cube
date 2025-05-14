@@ -45,7 +45,7 @@ def load_demos(root: str = "./demos") -> dict:
             module_path = "demos." + demo_name + "." + "scene"
             module = import_module(module_path)
 
-            xml_valid = [False, False, False, False]
+            xml_valid = [False, False, False, False, False]
             scene_valid = hasattr(module, "get_scene")
 
             xml_path = demo_root + "/cfg.xml"
@@ -68,6 +68,9 @@ def load_demos(root: str = "./demos") -> dict:
                     elif xml_c.tag == "video":
                         xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text
                         xml_valid[3] = True
+                    elif xml_c.tag == "icon":
+                        xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text
+                        xml_valid[4] = True
             xml_valid = all(xml_valid)
                         
             if xml_valid and scene_valid:
@@ -199,18 +202,22 @@ def demo_video_scene(aspect_ratio: float, video: Video, play: np.array, pause: n
 
 
 def scene_primary(windowWidth: int, window_height: int, application_state: State, font: dict) -> Element:
-    
+    aspect_ratio = windowWidth/window_height
+    icon_width  = int( windowWidth*0.1)
+    icon_height = int(window_height*0.1)
 
     demos = load_demos()
     demo_videos = {}
+    demo_icons = {}
 
     for d in demos:
         video = Video(path = demos[d]["cfg"]["video"], loop = True)
         demo_videos[d] = video
+        demo_icons[d] = rasterize_svg(
+            path = demos[d]["cfg"]["icon"],
+            width = 512,
+            height = 512)
 
-    aspect_ratio = windowWidth/window_height
-    icon_width  = int( windowWidth*0.1)
-    icon_height = int(window_height*0.1)
 
     video_icon = rasterize_svg(path = "./res/icons/video-solid.svg",          width = icon_width*1.0, height = icon_height*1.0)
     point_icon = rasterize_svg(path = "./res/icons/hand-pointer.svg",         width = icon_width*0.7, height = icon_height*0.7)
@@ -297,13 +304,13 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             id        = id)
 
     drawer_menu = DrawerMenu(
-        position = [0.9, header_height],
+        position = [0.93, header_height],
         scale    = [1.0, 1.0 - header_height],
-        position_opened = [0.55, header_height],
-        position_closed = [0.90, header_height],
+        position_opened = [0.65, header_height],
+        position_closed = [0.93, header_height],
         id = "drawer_menu")
     drawer_menu_container = Container(
-        position = [0.1, 0.0],
+        position = [0.0, 0.0],
         scale = [0.35, 1.0 - header_height],
         colour = vicos_red,
         id = "drawer_menu_container")
@@ -611,7 +618,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
     
     def hint_constructor():
 
-        x = 0.94
+        x = 0.87
         y = 0.4755
 
         fade_in = AnimationListOne(
@@ -630,13 +637,13 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         move_0 = AnimationList(
             transform = ("position", [x - 0.02, y]),
             on_end    = lambda c, g, u: c.animation_play(animation_to_play = "move_1"),
-            duration  = 2.0,
+            duration  = 0.75,
             id = "move_0")
 
         move_1 = AnimationList(
             transform = ("position", [x, y]),
             on_end    = lambda c, g, u: c.animation_play(animation_to_play = "move_0"),
-            duration  = 0.5,
+            duration  = 0.75,
             id = "move_1")
 
         pointer_texture = TextureR(
@@ -729,7 +736,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         time_scale*= 0.9
 
         button_main = Button(
-            position   = [2.0, demo_buttons_position],
+            position   = [0.05, demo_buttons_position],
             offset = [0.0, 0.015*aspect_ratio],
             scale  = [0.25, 0.09],
             depth  = 0.83,
@@ -739,7 +746,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             id = i)
 
         button_video = Button(
-            position   = [2.0, demo_buttons_position],
+            position   = [0.78, demo_buttons_position],
             offset = [0.0, 0.015*aspect_ratio],
             scale  = [0.07, 0.09],
             depth  = 0.83,
@@ -749,7 +756,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             id = i)
 
         button_text = TextField(
-            position = [0.05, demo_buttons_position],
+            position = [0.25, demo_buttons_position],
             offset   = [0.0, -0.022],
             text_scale = 0.7,
             depth  = 0.82,
@@ -759,6 +766,15 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         button_text.set_text(font = font, text = demos[i]["cfg"]["highlight"])
         button_text.center_y()
 
+        demo_icon_texture = TextureR(
+            position = [0.0, 0.0],
+            offset = [0.01, 0.01],
+            scale    = [ 0.08/aspect_ratio, 0.08],
+            colour = white,
+            id = "buttonicontest_{}".format(i),
+            get_texture = (lambda id: lambda g, cd: demo_icons[id])(i), # make sure correct i is used
+            set_once = True)
+        demo_icon_texture.depends_on(element = button_main)
         button_text.depends_on(element = button_main)
         video_icon_texture.depends_on(element = button_video)
         video_icon_texture.center_x()
@@ -811,6 +827,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
             button.set_colour(colour = vicos_gray)
             vicos_intro_texture.animation_play(animation_to_play = "fade_out")
+            hint.animation_play(animation_to_play = "fade_out")
         else:
             if button.mouse_click_count % 2 == 0:
 
@@ -821,6 +838,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
                 button.set_colour(colour = vicos_red)
                 vicos_intro_texture.animation_play(animation_to_play = "fade_in")
+                hint.animation_play(animation_to_play = "fade_in")
             else:
 
                 display_screen.active_demo_button.mouse_click_count += 1
@@ -862,24 +880,24 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
     def on_close(element, gui):
         print("closing drawer")
         if display_screen.active_video is None and display_screen.active_demo is None:
-            hint.position[0] = 0.94
+            hint.position[0] = 0.87
             hint.animation_play(animation_to_play = "fade_in")
 
-        for b in demo_buttons:
-            b.animation_stop(animation_to_stop = "position_down")
-            b.animation_play(animation_to_play = "position_up")
-        for b in demo_video_buttons:
-            b.animation_stop(animation_to_stop = "position_down")
-            b.animation_play(animation_to_play = "position_up")
+        # for b in demo_buttons:
+        #     b.animation_stop(animation_to_stop = "position_down")
+        #     b.animation_play(animation_to_play = "position_up")
+        # for b in demo_video_buttons:
+        #     b.animation_stop(animation_to_stop = "position_down")
+        #     b.animation_play(animation_to_play = "position_up")
 
     def on_grab(element, gui):
         print("grabbing drawer")
-        for b in demo_buttons:
-            b.animation_stop(animation_to_stop = "position_up")
-            b.animation_play(animation_to_play = "position_down")
-        for b in demo_video_buttons:
-            b.animation_stop(animation_to_stop = "position_up")
-            b.animation_play(animation_to_play = "position_down")
+        # for b in demo_buttons:
+        #     b.animation_stop(animation_to_stop = "position_up")
+        #     b.animation_play(animation_to_play = "position_down")
+        # for b in demo_video_buttons:
+        #     b.animation_stop(animation_to_stop = "position_up")
+        #     b.animation_play(animation_to_play = "position_down")
 
         hint.animation_play(animation_to_play = "fade_out")
 
