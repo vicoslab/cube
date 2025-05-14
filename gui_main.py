@@ -283,18 +283,12 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
     header_bar.set_depth(depth = display_screen.properties[0] - 0.02)
 
-    _drawer_close_animation_directions = {
-        "up": np.array([0.0, -1.0]),
-        "down": np.array([0.0, 1.0]),
-        "left": np.array([-1.0, 0.0]),
-        "right": np.array([1.0, 0.0])
-    }
-    def setup_drawer_close_animation (drawer: DrawerMenu, drawer_container: Container, id: string, direction: string):
+    def setup_drawer_close_animation (drawer: DrawerMenu, drawer_container: Container, id: string):
         # Since animations don't seem to work with drawers, we move the container
         initial_position = drawer_container.position.copy()
-        if direction not in _drawer_close_animation_directions:
-            raise ValueError(f"Invalid direction: {direction}.")
-        dxy = _drawer_close_animation_directions[direction].copy()
+        x_open, y_open = drawer.position_opened
+        x_closed, y_closed = drawer.position_closed
+        dxy = np.array([x_closed - x_open, y_closed - y_open])
 
         def on_end (c, g, u):
             drawer.open = False
@@ -320,7 +314,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         scale = [0.35, 1.0 - header_height],
         colour = vicos_red,
         id = "drawer_menu_container")
-    setup_drawer_close_animation(drawer_menu, drawer_menu_container, "close", "right")
+    setup_drawer_close_animation(drawer_menu, drawer_menu_container, "close")
     drawer_menu_container.depends_on(element = drawer_menu)
 
     def calibration_on_grab(component, gui: Gui):
@@ -696,13 +690,13 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         #### Click animation
 
         main_scale_up = AnimationList(
-            transform = ("scale", [0.255, 0.095]),
+            transform = ("scale", [0.265, 0.095]),
             on_end = lambda c, g, u: c.animation_play(animation_to_play = "scale_down"),
             duration  = 0.2,
             id = "scale_up")
 
         main_scale_down = AnimationList(
-            transform = ("scale", [0.25, 0.09]),
+            transform = ("scale", [0.26, 0.09]),
             duration  = 0.2,
             id = "scale_down")
 
@@ -742,9 +736,9 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         time_scale*= 0.9
 
         button_main = Button(
-            position   = [0.05, demo_buttons_position],
+            position   = [0.02, demo_buttons_position],
             offset = [0.0, 0.015*aspect_ratio],
-            scale  = [0.25, 0.09],
+            scale  = [0.26, 0.09],
             depth  = 0.83,
             colour     = vicos_red,
             animations = {main_scale_up.id: main_scale_up, main_scale_down.id: main_scale_down,
@@ -774,8 +768,8 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         demo_icon_texture = TextureR(
             position = [0.0, 0.0],
-            offset = [0.01, 0.01],
-            scale    = [ 0.08/aspect_ratio, 0.08],
+            offset = [-0.02, 0.01],
+            scale    = [ 0.08, 0.08],
             colour = white,
             id = "buttonicontest_{}".format(i),
             get_texture = (lambda id: lambda g, cd: demo_icons[id])(i), # make sure correct i is used
@@ -862,7 +856,8 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         custom_data.echolib_handler.docker_channel_ready = False # Reset image return after demo is switched or terminated
         
-        close_drawer()
+        if drawer_menu.open:
+            drawer_menu_container.animation_play(animation_to_play = "close")
 	
 
     def close_drawer():
