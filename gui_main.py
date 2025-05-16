@@ -46,7 +46,7 @@ def load_demos(root: str = "./demos") -> dict:
             module_path = "demos." + demo_name + "." + "scene"
             module = import_module(module_path)
 
-            xml_valid = [False, False, False, False, False]
+            xml_valid_dict = { tag: False for tag in ["demoId", "dockerId", "highlight", "video", "icon"] }
             scene_valid = hasattr(module, "get_scene")
 
             xml_path = demo_root + "/cfg.xml"
@@ -57,22 +57,13 @@ def load_demos(root: str = "./demos") -> dict:
 
             if xml_cfg_root.tag == "cfg":
                 for xml_c in list(xml_cfg_root): # Iterator for children
-                    if xml_c.tag == "demoId":
+                    if xml_c.tag in [ "demoId", "dockerId", "highlight" ]:
                         xml_parsed[xml_c.tag] = xml_c.text
-                        xml_valid[0] = True
-                    elif xml_c.tag == "dockerId":
-                        xml_parsed[xml_c.tag] = xml_c.text
-                        xml_valid[1] = True
-                    elif xml_c.tag == "highlight":
-                        xml_parsed[xml_c.tag] = xml_c.text
-                        xml_valid[2] = True
-                    elif xml_c.tag == "video":
+                        xml_valid_dict[xml_c.tag] = True
+                    elif xml_c.tag in [ "video", "icon" ]:
                         xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text
-                        xml_valid[3] = True
-                    elif xml_c.tag == "icon":
-                        xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text
-                        xml_valid[4] = True
-            xml_valid = all(xml_valid)
+                        xml_valid_dict[xml_c.tag] = True
+            xml_valid = all(xml_valid_dict.values())
                         
             if xml_valid and scene_valid:
                 if xml_parsed["demoId"] in demos.keys():
@@ -80,8 +71,11 @@ def load_demos(root: str = "./demos") -> dict:
                 else:
                     demos[xml_parsed["demoId"]] = {"cfg": xml_parsed, "get_scene": module.get_scene}
             else:
-                # TODO better error reporting
-                print("{} is not valid.".format(module_path))
+                if not scene_valid:
+                    raise ValueError(f"Module {module_path} missing scene declaration.")
+                for k,v in xml_valid_dict.items():
+                    if not v:
+                        raise ValueError(f"Module configuration '{module_path}/cfg.xml' is missing attribute {k}.")
 
     return dict(sorted(demos.items(), key = lambda x: x[1]["cfg"]["highlight"]))
 
