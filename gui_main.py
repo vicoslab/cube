@@ -13,12 +13,18 @@ from gui_echolib import EcholibHandler
 import xml.etree.ElementTree as ET
 import os
 from importlib import import_module
+from enum import Enum
+
+class Language(str, Enum):
+    EN = "en"
+    SL = "sl"
 
 class State():
 
     def __init__(self):
 
         self.echolib_handler = EcholibHandler()
+        self.language = Language.SL
 
         self.default_camera_aspect_ratio = 4024.0/3036.0
 
@@ -28,6 +34,7 @@ class State():
 def load_demos(root: str = "./demos") -> dict:
 
     demos = {}
+    languages = [lang.value for lang in Language]
 
     for demo_name in os.listdir(root):
         
@@ -46,7 +53,10 @@ def load_demos(root: str = "./demos") -> dict:
             module_path = "demos." + demo_name + "." + "scene"
             module = import_module(module_path)
 
-            xml_valid_dict = { tag: False for tag in ["demoId", "dockerId", "highlight", "video", "icon"] }
+            attrs = [ "demoId", "dockerId", "video", "icon" ]
+            attrs_highlight = [ f"highlight-{lang}" for lang in languages ]
+
+            xml_valid_dict = { tag: False for tag in attrs + attrs_highlight }
             scene_valid = hasattr(module, "get_scene")
 
             xml_path = demo_root + "/cfg.xml"
@@ -57,7 +67,8 @@ def load_demos(root: str = "./demos") -> dict:
 
             if xml_cfg_root.tag == "cfg":
                 for xml_c in list(xml_cfg_root): # Iterator for children
-                    if xml_c.tag in [ "demoId", "dockerId", "highlight" ]:
+                    if xml_c.tag in [ "demoId", "dockerId" ] or \
+                       xml_c.tag in attrs_highlight:
                         xml_parsed[xml_c.tag] = xml_c.text
                         xml_valid_dict[xml_c.tag] = True
                     elif xml_c.tag in [ "video", "icon" ]:
@@ -77,7 +88,7 @@ def load_demos(root: str = "./demos") -> dict:
                     if not v:
                         raise ValueError(f"Module configuration '{module_path}/cfg.xml' is missing attribute {k}.")
 
-    return dict(sorted(demos.items(), key = lambda x: x[1]["cfg"]["highlight"]))
+    return dict(sorted(demos.items(), key = lambda x: x[1]["cfg"][f"highlight-{Language.SL.value}"]))
 
 def demo_scene_wrapper(window_aspect_ratio: float, demo_component: dict, camera_aspect_ratio: float = 4024.0/3036.0  ) -> DisplayTexture:
 
@@ -270,6 +281,65 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         depth  = 0.97,
         colour = vicos_red,
         id = "header_bar")
+    header_bar_demo_text = TextField(
+            position = [0.01, None],
+            text_scale = 0.7,
+            colour = [1.0, 1.0, 1.0, 0.75],
+            aspect_ratio = aspect_ratio, 
+            id = f"header_text_demo_name")
+    header_bar_demo_text_default = {
+        Language.SL.value: "DEMO celica",
+        Language.EN.value: "DEMO booth"
+    }
+    print(header_bar_demo_text_default)
+    header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[application_state.language])
+    header_bar_demo_text.center_y()
+    header_bar_demo_text.depends_on(element = header_bar)
+    
+    def get_language_callback(lang: string):
+        def on_click(button: Button, gui: Gui, state: State):
+            language_buttons[state.language].set_colour(vicos_red)
+            state.language = lang
+            button.set_colour(vicos_gray)
+            header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[lang])
+            
+            for button, demo in zip(demo_buttons, demos.keys()):
+                if display_screen.active_demo_button is not None and \
+                    display_screen.active_demo_button.id == button.id:
+                    header_bar_demo_text.set_text(font = font, text = demos[demo]["cfg"][f"highlight-{application_state.language}"])
+                for c in button.dependent_components:
+                    if c.id == "demo_button_text_{}".format(demo):
+                        c.set_text(font = font, text = demos[demo]["cfg"][f"highlight-{lang}"])
+        return on_click
+    
+    language_button_width = 0.05
+    def create_language_button(i: int, lang: string):
+        button = Button(
+            position = [1-i*language_button_width, 0],
+            offset = [0.0, 0],
+            scale = [language_button_width, header_height],
+            colour = vicos_red,
+            on_click = get_language_callback(lang),
+            id = f"button_language_{lang}")
+        button_text = TextField(
+            position = None,
+            text_scale = 0.7,
+            colour = [1.0, 1.0, 1.0, 0.75],
+            aspect_ratio = aspect_ratio, 
+            id = f"button_language_text_{lang}")
+        button_text.depends_on(button)
+        button_text.set_text(font = font, text = lang.upper())
+        button_text.center_x()
+        button_text.center_y()
+        return button
+
+    language_buttons = {} 
+    for i, lang in enumerate([lang.value for lang in Language], 1):
+        button = create_language_button(i, lang)
+        button.depends_on(element = header_bar)
+        if lang == application_state.language: # default language
+            button.set_colour(vicos_gray)
+        language_buttons[lang] = button
 
     header_bar.depends_on(element = display_screen)
     display_screen.insert_default(element = vicos_intro_texture)
@@ -757,7 +827,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
             id = "demo_button_text_{}".format(i))
-        button_text.set_text(font = font, text = demos[i]["cfg"]["highlight"])
+        button_text.set_text(font = font, text = demos[i]["cfg"][f"highlight-{application_state.language}"])
         button_text.center_y()
 
         demo_icon_texture = TextureR(
@@ -822,6 +892,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             button.set_colour(colour = vicos_gray)
             vicos_intro_texture.animation_play(animation_to_play = "fade_out")
             hint.animation_play(animation_to_play = "fade_out")
+            header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{custom_data.language}"])
         else:
             if button.mouse_click_count % 2 == 0:
 
@@ -833,6 +904,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
                 button.set_colour(colour = vicos_red)
                 vicos_intro_texture.animation_play(animation_to_play = "fade_in")
                 hint.animation_play(animation_to_play = "fade_in")
+                header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[custom_data.language])
             else:
 
                 display_screen.active_demo_button.mouse_click_count += 1
@@ -847,6 +919,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
                 display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
                 button.set_colour(colour = vicos_gray)
+                header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{custom_data.language}"])
 
         custom_data.echolib_handler.docker_channel_ready = False # Reset image return after demo is switched or terminated
         
