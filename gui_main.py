@@ -19,6 +19,19 @@ class Language(str, Enum):
     EN = "en"
     SL = "sl"
 
+class TextFieldMultilingual(TextField):
+    def __init__(self, language_callback, **kwargs):
+        super(TextFieldMultilingual, self).__init__(**kwargs)
+
+        self.language = None
+        self.language_callback = language_callback
+        self.command_chain.insert(0, self.update_content_language)
+    
+    def update_content_language(self, parent, gui, custom_data):
+        if self.language != custom_data.language:
+            self.language = custom_data.language
+            self.language_callback(self, self.language)
+
 class State():
 
     def __init__(self):
@@ -300,15 +313,11 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             language_buttons[state.language].set_colour(vicos_red)
             state.language = lang
             button.set_colour(vicos_gray)
-            header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[lang])
-            
-            for button, demo in zip(demo_buttons, demos.keys()):
-                if display_screen.active_demo_button is not None and \
-                    display_screen.active_demo_button.id == button.id:
-                    header_bar_demo_text.set_text(font = font, text = demos[demo]["cfg"][f"highlight-{application_state.language}"])
-                for c in button.dependent_components:
-                    if c.id == "demo_button_text_{}".format(demo):
-                        c.set_text(font = font, text = demos[demo]["cfg"][f"highlight-{lang}"])
+            if display_screen.active_demo_button is None:
+                header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[lang])
+            else:
+                header_bar_demo_text.set_text(font = font, text = \
+                    demos[display_screen.active_demo_button.id]["cfg"][f"highlight-{application_state.language}"])
         return on_click
     
     language_button_width = 0.05
@@ -412,14 +421,20 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
     def create_calibration_menu():
 
-        calibration_title = TextField(
+        calibration_title_content = {
+            Language.EN: "Camera calibration",
+            Language.SL: "Kalibracija kamere"
+        }
+        def calibration_title_language_callback(field, lang):
+            field.set_text(font = font, text = calibration_title_content[lang])
+            field.center_x()
+        calibration_title = TextFieldMultilingual(
             position = [0.05, 0.05],
             text_scale = 0.68,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio,
-            id = "calibration_title")
-        calibration_title.set_text(font = font, text = "Kalibracija kamere")
-        calibration_title.center_x()
+            id = "calibration_title",
+            language_callback = calibration_title_language_callback)
 
         # Create live feed component
 
@@ -453,15 +468,17 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
                 id = f"calibration_display_{id}",
                 get_texture = get_texture)
 
-            calibration_live_feed_title = TextField(
+            def calibration_live_feed_title_language_callback(field, lang):
+                field.set_text(font = font, text = title[lang])
+                field.center_x()
+                
+            calibration_live_feed_title = TextFieldMultilingual(
                     position = [0.05, 0.05],
                     text_scale = 0.7,
                     colour = [0.0, 0.0, 0.0, 0.75],
                     aspect_ratio = aspect_ratio, 
-                    id = f"calibration_display_title_{id}")
-
-            calibration_live_feed_title.set_text(font = font, text = title)
-            calibration_live_feed_title.center_x()
+                    id = f"calibration_display_title_{id}",
+                    language_callback=calibration_live_feed_title_language_callback)
 
             calibration_live_feed_title.depends_on(element = calibration_live_feed_container)
             calibration_display_live_feed.center_x()
@@ -470,8 +487,16 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
             return calibration_live_feed_container
 
-        d_original = get_display(position = [0.025, 0.28], scale = 0.62, title = "Originalna velikost", get_texture = get_original, id = 0)
-        d_zoom     = get_display(position = [0.51,  0.28], scale = 0.62, title = "Povečana velikost",   get_texture = get_zoom, id = 1)
+        d_original_content = {
+            Language.EN: "Original size",
+            Language.SL: "Originalna velikost"
+        }
+        d_zoom_content = {
+            Language.EN: "Enlarged size",
+            Language.SL: "Povečana velikost"
+        }
+        d_original = get_display(position = [0.025, 0.28], scale = 0.62, title = d_original_content, get_texture = get_original, id = 0)
+        d_zoom     = get_display(position = [0.51,  0.28], scale = 0.62, title = d_zoom_content,   get_texture = get_zoom, id = 1)
 
         button_container = Container(
             position = [0.01, 0.08],
@@ -489,15 +514,21 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             colour = vicos_red,
             id = "button_awb")
 
-        button_awb_text = TextField(
+        awb_text_content = {
+            Language.EN: "Automatic white balance",
+            Language.SL: "Samodejna raven beline"
+        }
+        def awb_text_language_callback(field, lang):
+            field.set_text(font = font, text = awb_text_content[lang])
+            field.center_x()
+            field.center_y()
+        button_awb_text = TextFieldMultilingual(
             position = [0.0, 0.0],
             text_scale = 0.68,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
-            id = "button_awb_text")
-        button_awb_text.set_text(font = font, text = "Samodejna raven beline")
-        button_awb_text.center_x()
-        button_awb_text.center_y()
+            id = "button_awb_text",
+            language_callback=awb_text_language_callback)
 
         button_awb_text.depends_on(element = button_awb)
 
@@ -508,15 +539,21 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             colour = vicos_red,
             id = "button_ax")
 
-        button_ax_text = TextField(
+        ax_text_content = {
+            Language.EN: "Automatic exposure",
+            Language.SL: "Samodejna osvetlitev"
+        }
+        def ax_text_language_callback(field, lang):
+            field.set_text(font = font, text = ax_text_content[lang])
+            field.center_x()
+            field.center_y()
+        button_ax_text = TextFieldMultilingual(
             position = [0.0, 0.0],
             text_scale = 0.68,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
-            id = "button_ax_text")
-        button_ax_text.set_text(font = font, text = "Samodejna osvetlitev")
-        button_ax_text.center_x()
-        button_ax_text.center_y()
+            id = "button_ax_text",
+            language_callback=ax_text_language_callback)
 
         button_ax_text.depends_on(element = button_ax)
    
@@ -598,27 +635,36 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         slider_ax.circle.animations = {slider_ax_to_red.id: slider_ax_to_red, slider_ax_to_white.id: slider_ax_to_white}
 
-        slider_awb_text = TextField(
+        slider_awb_text_content = {
+            Language.EN: "White balance: {:.2f}",
+            Language.SL: "Raven beline: {:.2f}"
+        }
+        def slider_awb_text_language_callback(field, lang):
+            field.set_text(font = font, text = slider_awb_text_content[lang].format(slider_awb.selected_value))
+        slider_awb_text = TextFieldMultilingual(
             position = [0.575, 0.3],
             text_scale = 0.68,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
-            id = "slider_awb_text")
-        slider_awb_text.set_text(font = font, text = "Raven beline: {:.2f}".format(slider_awb.selected_value))
+            id = "slider_awb_text",
+            language_callback=slider_awb_text_language_callback)
 
-        slider_ax_text = TextField(
+        slider_ax_text_content = {
+            Language.EN: "Exposure time: {:.3f} ms",
+            Language.SL: "Čas osvetlitve: {:.3f} ms"
+        }
+        def slider_ax_text_language_callback(field, lang):
+            field.set_text(font = font, text = slider_ax_text_content[lang].format(slider_ax.selected_value*1e-6))
+        slider_ax_text = TextFieldMultilingual(
             position = [0.76, 0.3],
             text_scale = 0.68,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
-            id = "slider_ax_text")
-        slider_ax_text.set_text(font = font, text = "Čas osvetlitve: {:.3f} ms".format(slider_ax.selected_value*1e-6))
+            id = "slider_ax_text",
+            language_callback=slider_ax_text_language_callback)
 
-        def slider_awb_on_update(slider: RangeSlider, custom_data):
-            slider_awb_text.set_text(font = font, text = "Raven beline: {:.2f}".format(slider.selected_value))
-
-        def slider_ax_on_update(slider: RangeSlider, custom_data):
-            slider_ax_text.set_text(font = font, text = "Čas osvetlitve: {:.3f} ms".format(slider.selected_value*1e-6))
+        slider_awb.on_value_update  = lambda slider, custom_data: slider_awb_text_language_callback(slider_awb_text, custom_data.language)
+        slider_ax.on_value_update  = lambda slider, custom_data: slider_ax_text_language_callback(slider_ax_text, custom_data.language)
 
         def slider_awb_on_select(slider: RangeSlider, custom_data):
             custom_data.echolib_handler.append_camera_command(f"BalanceRatio {slider.selected_value}")
@@ -627,6 +673,9 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         def slider_ax_on_select(slider: RangeSlider, custom_data):
             custom_data.echolib_handler.append_camera_command(f"ExposureTime {slider.selected_value}")
             custom_data.echolib_handler.docker_camera_properties["ExposureTime"] = [slider.selected_value]
+
+        slider_awb.on_select = slider_awb_on_select
+        slider_ax.on_select = slider_ax_on_select
 
         def button_awb_on_click(button: Button, gui: Gui, custom_data):
             
@@ -668,12 +717,6 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         button_awb.on_click = button_awb_on_click
         button_ax.on_click  = button_ax_on_click
-
-        slider_awb.on_value_update  = slider_awb_on_update
-        slider_awb.on_select = slider_awb_on_select
-
-        slider_ax.on_value_update  = slider_ax_on_update
-        slider_ax.on_select = slider_ax_on_select
 
         button_awb.center_y()
         button_ax.center_y()
@@ -830,16 +873,20 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
                           video_position_down.id: video_position_down, video_position_up.id: video_position_up},
             id = i)
 
-        button_text = TextField(
+        def create_button_text_callback(i):
+            def callback(field, lang):
+                field.set_text(font = font, text = demos[i]["cfg"][f"highlight-{lang}"])
+                field.center_y()
+            return callback
+        button_text = TextFieldMultilingual(
             position = [0.25, demo_buttons_position],
             offset   = [0.0, -0.022],
             text_scale = 0.7,
             depth  = 0.82,
             colour = [1.0, 1.0, 1.0, 0.75],
             aspect_ratio = aspect_ratio, 
-            id = "demo_button_text_{}".format(i))
-        button_text.set_text(font = font, text = demos[i]["cfg"][f"highlight-{application_state.language}"])
-        button_text.center_y()
+            id = "demo_button_text_{}".format(i),
+            language_callback=create_button_text_callback(i))
 
         demo_icon_texture = TextureR(
             position = [0.0, 0.0],
