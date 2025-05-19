@@ -32,7 +32,7 @@ class EcholibHandler:
         self.camera_stream_output = echolib.Subscriber(self.client, "camera_stream_0_output", "string", self.__callback_camera_stream_output)
         self.camera_stream_input  = echolib.Publisher(self.client,  "camera_stream_0_input",  "string")
 
-        self.docker_camera_ranges = None
+        self.docker_camera_properties = {}
 
         self.camera_stream_image_new = False
         self.camera_stream_image   = None
@@ -154,8 +154,8 @@ class EcholibHandler:
         self.camera_stream_image_new = True
 
     def __callback_camera_stream_output(self, message):
-
-        self.docker_camera_ranges = echolib.MessageReader(message).readString().split(" ")
+        tokens = echolib.MessageReader(message).readString().split(" ")
+        self.docker_camera_properties[tokens[0]] = tokens[1:]
 
     ###########################
 

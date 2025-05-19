@@ -291,7 +291,6 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         Language.SL.value: "DEMO celica",
         Language.EN.value: "DEMO booth"
     }
-    print(header_bar_demo_text_default)
     header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[application_state.language])
     header_bar_demo_text.center_y()
     header_bar_demo_text.depends_on(element = header_bar)
@@ -522,28 +521,23 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         button_ax_text.depends_on(element = button_ax)
    
         def slider_awb_get_range(slider: RangeSlider, custom_data):
-            ranges = custom_data.echolib_handler.docker_camera_ranges
+            properties = custom_data.echolib_handler.docker_camera_properties
 
-            if ranges is None:
+            if "BalanceRatioRange" not in properties:
                 return None
 
-            for i in range(0, len(ranges), 3):
-
-                if ranges[i] == "BalanceRatio":
-                    return (float(ranges[i + 1]), float(ranges[i + 2]))
+            lower, upper = map(float, properties["BalanceRatioRange"])
+            return lower, upper
 
         def slider_ax_get_range(slider: RangeSlider, custom_data):
-            ranges = custom_data.echolib_handler.docker_camera_ranges
-
-            if ranges is None:
+            properties = custom_data.echolib_handler.docker_camera_properties
+            
+            if "ExposureTimeRange" not in properties:
                 return None
-
-            for i in range(0, len(ranges), 3):
-
-                # Halve max exposure time
-                if ranges[i] == "ExposureTime": 
-                    #return (float(ranges[i + 1]), float(ranges[i + 2]))
-                    return (float(ranges[i + 1]), 39062.3407109375)
+            
+            lower, upper = map(float, properties["ExposureTimeRange"])
+            # Limit upper for slider accuracy
+            return lower, min(upper, 39062.3407109375)
 
         slider_awb_to_red = AnimationList(
             transform = ("colour", vicos_red),
@@ -574,8 +568,15 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             aspect_ratio = aspect_ratio,
             get_range = slider_awb_get_range,
             id = "range_slider_awb")
-        print("Slider AWB range: ", slider_awb_get_range(slider_awb, application_state))
-        slider_awb.selected_value = 4.20
+
+        range = slider_awb_get_range(slider_awb, application_state)
+        # print("Slider AWB range:", range)
+        camera_properties = application_state.echolib_handler.docker_camera_properties
+        if "BalanceRatio" in camera_properties and range is not None:
+            value = float(camera_properties["BalanceRatio"][0])
+            lower, upper = range
+            slider_awb.circle.position[0] = (value-lower)/(upper - lower)
+
         slider_awb.circle.animations = {slider_awb_to_red.id: slider_awb_to_red, slider_awb_to_white.id: slider_awb_to_white}
 
         slider_ax = RangeSlider(
@@ -587,6 +588,14 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             aspect_ratio = aspect_ratio,
             get_range = slider_ax_get_range,
             id = "range_slider_ax")
+
+        range = slider_ax_get_range(slider_awb, application_state)
+        # print("Slider AX range:", range)
+        if "ExposureTime" in camera_properties and range is not None:
+            value = float(camera_properties["ExposureTime"][0])
+            lower, upper = range
+            slider_ax.circle.position[0] = (value - lower)/(upper - lower)
+
         slider_ax.circle.animations = {slider_ax_to_red.id: slider_ax_to_red, slider_ax_to_white.id: slider_ax_to_white}
 
         slider_awb_text = TextField(
@@ -613,9 +622,11 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
         def slider_awb_on_select(slider: RangeSlider, custom_data):
             custom_data.echolib_handler.append_camera_command(f"BalanceRatio {slider.selected_value}")
+            custom_data.echolib_handler.docker_camera_properties["BalanceRatio"] = [slider.selected_value]
 
         def slider_ax_on_select(slider: RangeSlider, custom_data):
             custom_data.echolib_handler.append_camera_command(f"ExposureTime {slider.selected_value}")
+            custom_data.echolib_handler.docker_camera_properties["ExposureTime"] = [slider.selected_value]
 
         def button_awb_on_click(button: Button, gui: Gui, custom_data):
             
