@@ -38,6 +38,7 @@ class State():
 
         self.echolib_handler = EcholibHandler()
         self.language = Language.SL
+        self.active_demo = None
 
         self.default_camera_aspect_ratio = 4024.0/3036.0
 
@@ -313,11 +314,11 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
             language_buttons[state.language].set_colour(vicos_red)
             state.language = lang
             button.set_colour(vicos_gray)
-            if display_screen.active_demo_button is None:
+            if state.active_demo is None:
                 header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[lang])
             else:
                 header_bar_demo_text.set_text(font = font, text = \
-                    demos[display_screen.active_demo_button.id]["cfg"][f"highlight-{application_state.language}"])
+                    demos[state.active_demo]["cfg"][f"highlight-{state.language}"])
         return on_click
     
     language_button_width = 0.05
@@ -666,18 +667,17 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         slider_awb.on_value_update  = lambda slider, custom_data: slider_awb_text_language_callback(slider_awb_text, custom_data.language)
         slider_ax.on_value_update  = lambda slider, custom_data: slider_ax_text_language_callback(slider_ax_text, custom_data.language)
 
-        def slider_awb_on_select(slider: RangeSlider, custom_data):
-            custom_data.echolib_handler.append_camera_command(f"BalanceRatio {slider.selected_value}")
-            custom_data.echolib_handler.docker_camera_properties["BalanceRatio"] = [slider.selected_value]
-
-        def slider_ax_on_select(slider: RangeSlider, custom_data):
-            custom_data.echolib_handler.append_camera_command(f"ExposureTime {slider.selected_value}")
-            custom_data.echolib_handler.docker_camera_properties["ExposureTime"] = [slider.selected_value]
+        def slider_awb_on_select(slider: RangeSlider, state):
+            state.echolib_handler.append_camera_command(f"BalanceRatio {slider.selected_value}")
+            state.echolib_handler.docker_camera_properties["BalanceRatio"] = [slider.selected_value]
+        def slider_ax_on_select(slider: RangeSlider, state):
+            state.echolib_handler.append_camera_command(f"ExposureTime {slider.selected_value}")
+            state.echolib_handler.docker_camera_properties["ExposureTime"] = [slider.selected_value]
 
         slider_awb.on_select = slider_awb_on_select
         slider_ax.on_select = slider_ax_on_select
 
-        def button_awb_on_click(button: Button, gui: Gui, custom_data):
+        def button_awb_on_click(button: Button, gui: Gui, state):
             
             if button.mouse_click_count % 2:
 
@@ -686,7 +686,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
                 button.set_colour(vicos_gray)
 
-                custom_data.echolib_handler.append_camera_command(f"BalanceWhiteAuto Once")
+                state.echolib_handler.append_camera_command(f"BalanceWhiteAuto Once")
             else:
 
                 slider_awb.circle.animation_play(slider_awb_to_white.id)
@@ -694,9 +694,8 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
     
                 button.set_colour(vicos_red)
 
-                custom_data.echolib_handler.append_camera_command(f"BalanceWhiteAuto Off")
-
-        def button_ax_on_click(button: Button, gui: Gui, custom_data):
+                state.echolib_handler.append_camera_command(f"BalanceWhiteAuto Off")
+        def button_ax_on_click(button: Button, gui: Gui, state):
 
             if button.mouse_click_count % 2:
 
@@ -705,7 +704,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
                 button.set_colour(vicos_gray)
 
-                custom_data.echolib_handler.append_camera_command(f"ExposureAuto Once")
+                state.echolib_handler.append_camera_command(f"ExposureAuto Once")
             else:
 
                 slider_ax.circle.animation_play(slider_ax_to_white.id)
@@ -713,7 +712,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
                 button.set_colour(vicos_red)
 
-                custom_data.echolib_handler.append_camera_command(f"ExposureAuto Off")
+                state.echolib_handler.append_camera_command(f"ExposureAuto Off")
 
         button_awb.on_click = button_awb_on_click
         button_ax.on_click  = button_ax_on_click
@@ -935,51 +934,51 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         # TODO: it may not be best to close drawer when starting to play video, since video can only exist by clicking on drawer video button
         #close_drawer()
         
-    def on_click_demo_button(button: Button, gui: Gui, custom_data: State):
+    def on_click_demo_button(button: Button, gui: Gui, state: State):
         
         demo_key = button.id
         button.animation_play(animation_to_play = "scale_up")
 
-        if display_screen.active_demo is None:
-
+        if state.active_demo is None:
+            state.active_demo = demo_key
             display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
             docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
-            custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
+            state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
 
             button.set_colour(colour = vicos_gray)
             vicos_intro_texture.animation_play(animation_to_play = "fade_out")
             hint.animation_play(animation_to_play = "fade_out")
-            header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{custom_data.language}"])
+            header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{state.language}"])
         else:
             if button.mouse_click_count % 2 == 0:
-
+                state.active_demo = None
                 display_screen.remove_active_demo()
 
                 docker_command = "{} {}".format(-1, demos[demo_key]["cfg"]["dockerId"])
-                custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
+                state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
 
                 button.set_colour(colour = vicos_red)
                 vicos_intro_texture.animation_play(animation_to_play = "fade_in")
                 hint.animation_play(animation_to_play = "fade_in")
-                header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[custom_data.language])
+                header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[state.language])
             else:
-
+                state.active_demo = demo_key
                 display_screen.active_demo_button.mouse_click_count += 1
                 display_screen.active_demo_button.set_colour(colour = vicos_red)
 
                 docker_command = "{} {}".format(-1, demos[display_screen.active_demo_button.id]["cfg"]["dockerId"])
-                custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
+                state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
 
                 docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
-                custom_data.echolib_handler.append_command((custom_data.echolib_handler.docker_publisher, docker_command))
+                state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
 
                 display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
                 button.set_colour(colour = vicos_gray)
-                header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{custom_data.language}"])
+                header_bar_demo_text.set_text(font = font, text = demos[demo_key]["cfg"][f"highlight-{state.language}"])
 
-        custom_data.echolib_handler.docker_channel_ready = False # Reset image return after demo is switched or terminated
+        state.echolib_handler.docker_channel_ready = False # Reset image return after demo is switched or terminated
         
         if drawer_menu.open:
             drawer_menu_container.animation_play(animation_to_play = "close")
@@ -1080,6 +1079,7 @@ def main():
             scene = scene_primary(gui.width, gui.height, application_state, font)
             scene.update_geometry(parent = None)
 
+    application_state.active_demo = None
     application_state.echolib_handler.running = False
     application_state.echolib_handler.handler_thread.join()
 
