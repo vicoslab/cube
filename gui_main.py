@@ -10,6 +10,7 @@ from PIL import Image
 
 from gui_echolib import EcholibHandler
 
+import configparser
 import xml.etree.ElementTree as ET
 import os
 from importlib import import_module
@@ -34,10 +35,11 @@ class TextFieldMultilingual(TextField):
 
 class State():
 
-    def __init__(self):
+    def __init__(self, config):
 
         self.echolib_handler = EcholibHandler()
         self.language = Language.SL
+        self.config = config
         self.active_demo = None
 
         self.default_camera_aspect_ratio = 4024.0/3036.0
@@ -670,9 +672,20 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         def slider_awb_on_select(slider: RangeSlider, state):
             state.echolib_handler.append_camera_command(f"BalanceRatio {slider.selected_value}")
             state.echolib_handler.docker_camera_properties["BalanceRatio"] = [slider.selected_value]
+            if state.active_demo is not None:
+                section = f"demos.{state.active_demo}"
+                if section not in state.config:
+                    state.config[section] = {}
+                state.config[section]["balance_ratio"] = str(slider.selected_value)
+
         def slider_ax_on_select(slider: RangeSlider, state):
             state.echolib_handler.append_camera_command(f"ExposureTime {slider.selected_value}")
             state.echolib_handler.docker_camera_properties["ExposureTime"] = [slider.selected_value]
+            if state.active_demo is not None:
+                section = f"demos.{state.active_demo}"
+                if section not in state.config:
+                    state.config[section] = {}
+                state.config[section]["exposure_time"] = str(slider.selected_value)
 
         slider_awb.on_select = slider_awb_on_select
         slider_ax.on_select = slider_ax_on_select
@@ -934,6 +947,21 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
         # TODO: it may not be best to close drawer when starting to play video, since video can only exist by clicking on drawer video button
         #close_drawer()
         
+    def load_demo_config(key: str, state: State):
+
+        cfg = state.config
+        entry = f"demos.{key}"
+        if entry in cfg:
+            cfg = cfg[entry]
+            if "balance_ratio" in cfg:
+                val = cfg["balance_ratio"]
+                state.echolib_handler.append_camera_command(f'BalanceRatio {val}')
+                state.echolib_handler.docker_camera_properties["BalanceRatio"] = [val]
+            if "exposure_time" in cfg:
+                val = cfg["exposure_time"]
+                state.echolib_handler.append_camera_command(f'ExposureTime {val}')
+                state.echolib_handler.docker_camera_properties["ExposureTime"] = [val]
+    
     def on_click_demo_button(button: Button, gui: Gui, state: State):
         
         demo_key = button.id
@@ -945,6 +973,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
             docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
             state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
+            load_demo_config(demo_key, state)
 
             button.set_colour(colour = vicos_gray)
             vicos_intro_texture.animation_play(animation_to_play = "fade_out")
@@ -972,6 +1001,7 @@ def scene_primary(windowWidth: int, window_height: int, application_state: State
 
                 docker_command = "{} {}".format(1, demos[demo_key]["cfg"]["dockerId"])
                 state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
+                load_demo_config(demo_key, state)
 
                 display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), application_state.get_aspect_ratio()), active_demo_button = button)
 
@@ -1035,25 +1065,17 @@ def main():
 
     print("Starting VICOS DEMO OpenGL")
 
-    config      = open("./cfg", "r")
-    configLines = config.readlines()
-    for line in configLines:
-
-        tokens = line.split()
-
-        t0 = tokens[0].lower()
-        t1 = tokens[1]
-
-        if t0 == "width":
-            WIDTH = int(t1)
-        elif t0 == "height":
-            HEIGHT = int(t1)
-        elif t0 == "fullscreen":
-            FULLSCREEN = t1.lower() == "yes"
+    config = configparser.ConfigParser()
+    CONFIG = 'config.ini'
+    config.read(CONFIG)
+    
+    WIDTH = int(config["main"]["width"])
+    HEIGHT = int(config["main"]["height"])
+    FULLSCREEN = config["main"]["fullscreen"].lower() == "yes"
 
     #######################################################
 
-    application_state = State()
+    application_state = State(config)
 
     gui = Gui(fullscreen = FULLSCREEN, width = WIDTH, height = HEIGHT)
 
@@ -1075,9 +1097,14 @@ def main():
         application_state.echolib_handler.set_camera_to_none()
 
         if gui.should_window_resize():
+            config["main"]["width"] = str(gui.width)
+            config["main"]["height"] = str(gui.height)
 
             scene = scene_primary(gui.width, gui.height, application_state, font)
             scene.update_geometry(parent = None)
+
+    with open(CONFIG, 'w') as configfile:
+        config.write(configfile)
 
     application_state.active_demo = None
     application_state.echolib_handler.running = False
