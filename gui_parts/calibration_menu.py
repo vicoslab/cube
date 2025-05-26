@@ -253,7 +253,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
 
             state.echolib_handler.append_camera_command(f"BalanceWhiteAuto Off")
             state.echolib_handler.append_camera_command(f"GetBalanceRatio _")
-            time.sleep(0.5)
+            time.sleep(1.5)
 
             if "BalanceRatio" in camera_properties:
                 slider_awb.set_value(float(camera_properties["BalanceRatio"][0]))
@@ -282,9 +282,8 @@ def create_calibration_menu(state: State, font, aspect_ratio):
 
             state.echolib_handler.append_camera_command(f"ExposureAuto Off")
             state.echolib_handler.append_camera_command(f"GetExposureTime _")
-            time.sleep(0.5)
+            time.sleep(1.5)
 
-            print("updating config/slider")
             if "ExposureTime" in camera_properties:
                 slider_ax.set_value(float(camera_properties["ExposureTime"][0]))
                 slider_ax_text.language_callback(slider_ax_text, slider_ax_text.language) # trigger text update
