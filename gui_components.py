@@ -104,16 +104,18 @@ class TouchContainer(Container):
         self.on_move = on_move
         
         def mouse_update(parent, gui: Gui, custom_data):
+            if not gui.interaction_context_free(self):
+                return
             
             if gui.mouse_press_event is not None:
                 if self.on_press is not None:
                     is_pressed, x, y = gui.mouse_press_event
-                    self.on_press(is_pressed, x, y, custom_data)
+                    self.on_press(self, is_pressed, x, y, custom_data)
 
             elif self.on_move is not None:
                 if gui.dx == 0 and gui.dy == 0 or self.on_move is None:
                     return
-                self.on_move(gui.x_pos, gui.y_pos, custom_data)
+                self.on_move(self, gui.x_pos, gui.y_pos, custom_data)
   
         self.command_chain.insert(0, mouse_update)
 

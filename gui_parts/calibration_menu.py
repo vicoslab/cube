@@ -264,7 +264,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
                 if section not in state.config:
                     state.config[section] = {}
                 state.config[section]["balance_ratio"] = \
-                    state.echolib_handler.docker_camera_properties["BalanceRatio"][0]
+                    str(state.echolib_handler.docker_camera_properties["BalanceRatio"][0])
             
 
     def button_ax_on_click(button: Button, gui: Gui, state):
@@ -293,7 +293,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
                 if section not in state.config:
                     state.config[section] = {}
                 state.config[section]["balance_ratio"] = \
-                    state.echolib_handler.docker_camera_properties["BalanceRatio"][0]
+                    str(state.echolib_handler.docker_camera_properties["BalanceRatio"][0])
 
     button_awb.on_click = button_awb_on_click
     button_ax.on_click  = button_ax_on_click

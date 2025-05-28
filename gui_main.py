@@ -13,6 +13,7 @@ from gui_parts.header_bar import create_header
 from gui_parts.icons import Icons
 from gui_parts.hint import create_hint
 from gui_parts.intro_video import create_intro_video
+from gui_parts.extend_interaction import ExtendedGui
 from load_demos import load_demos
 
 import configparser
@@ -134,7 +135,11 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
             c.depends_on(element = component.dependent_components[0])
             c.update_geometry(parent = component.dependent_components[0])
 
+    def calibration_on_open(component, gui: Gui):
+        gui.grab_interaction_context(component)
+
     def calibration_on_close(component, gui: Gui):
+        gui.release_interaction_context(component)
         component.dependent_components[0].dependent_components.clear()
 
     drawer_menu_calibration = DrawerMenu(
@@ -143,6 +148,7 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
         position_opened = [0.0,-header_height],
         position_closed = [0.0, 0.9],
         id = "drawer_menu_calibration",
+        on_open = calibration_on_open,
         on_grab  = calibration_on_grab,
         on_close = calibration_on_close)
     drawer_menu_calibration_container = Container(
@@ -194,10 +200,10 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
         button.animation_play(animation_to_play = "scale_up")
 
         if state.active_demo is None:
-            display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), state.get_aspect_ratio()), active_demo_button = button)
-            
             start_container(state, demos, demo_key)
             apply_demo_config(demo_key, state)
+            
+            display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), state.get_aspect_ratio()), active_demo_button = button)
 
             button.set_colour(colour = Colours.VICOS_GRAY)
             vicos_intro_texture.animation_play(animation_to_play = "fade_out")
@@ -263,7 +269,7 @@ def main():
 
     state = State(config, EcholibHandler())
 
-    gui = Gui(fullscreen = FULLSCREEN, width = WIDTH, height = HEIGHT)
+    gui = ExtendedGui(fullscreen = FULLSCREEN, width = WIDTH, height = HEIGHT)
 
     font = load_font(path = "./res/fonts/Metropolis-SemiBold.otf")
 
