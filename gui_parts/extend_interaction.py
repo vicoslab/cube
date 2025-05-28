@@ -42,4 +42,11 @@ class ExtendedGui(Gui):
                         return True
                     el = el.parent
                 return False
+        # Ideally this should be 'True' but is not feasible due to the many
+        # elements that are partially off screen, which makes them escape the
+        # earlier check
+        # To do this properly we would need to raycast mouse events,
+        # but thats just not how this library was designed
+        # The most problematic consequence of setting this to True is that
+        # calibration menu wouldn't block sidebar interactions while its open
         return False
