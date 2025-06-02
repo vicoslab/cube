@@ -19,7 +19,7 @@ class DockerManager():
         self.pyecho_docker_out = echolib.Publisher(self.pyecho_client, "dockerOut", "string")
         self.pyecho_docker_stoped = echolib.Publisher(self.pyecho_client, "docker_stoped", "string")
 
-        self.command     = None
+        self.command     = []
         self.command_lock = Lock()
         self.stop        = False
 
@@ -38,9 +38,16 @@ class DockerManager():
             command = None
 
             self.command_lock.acquire()
-            if self.command is not None:
-                command = self.command.split(" ")
-                self.command = None
+            if len(self.command) > 0:
+                command = self.command.pop(0).split(" ")
+                
+                # Skip command pairs if they act on the same container (i.e. add and remove quickly)
+                if len(self.command) > 0:
+                    next = self.command[0].split(" ")
+                    if command[1] == next[1] and \
+                        int(command[0]) * int(next[0]) == -1: # This part shouldn't be neccessary, but just in case
+                        self.command.pop(0)
+                        command = None
             self.command_lock.release()
 
             if command is not None:
@@ -151,7 +158,7 @@ class DockerManager():
     def __callback(self, message):
 
         self.command_lock.acquire()
-        self.command = echolib.MessageReader(message).readString()
+        self.command.append(echolib.MessageReader(message).readString())
         print("Got command: {}".format(self.command))
         self.command_lock.release()
 
