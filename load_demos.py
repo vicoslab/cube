@@ -27,7 +27,7 @@ def load_demos(root: str = "./demos") -> dict:
             module_path = "demos." + demo_name + "." + "scene"
             module = import_module(module_path)
 
-            attrs = [ "demoId", "dockerId", "video", "icon" ]
+            attrs = [ "demoId", "dockerId", "video", "icon", "vramMin", "vramMax" ]
             attrs_highlight = [ f"highlight-{lang}" for lang in languages ]
 
             xml_valid_dict = { tag: False for tag in attrs + attrs_highlight }
@@ -44,6 +44,9 @@ def load_demos(root: str = "./demos") -> dict:
                     if xml_c.tag in [ "demoId", "dockerId" ] or \
                        xml_c.tag in attrs_highlight:
                         xml_parsed[xml_c.tag] = xml_c.text
+                        xml_valid_dict[xml_c.tag] = True
+                    elif xml_c.tag in [ "vramMin", "vramMax"]:
+                        xml_parsed[xml_c.tag] = int(xml_c.text)
                         xml_valid_dict[xml_c.tag] = True
                     elif xml_c.tag in [ "video", "icon" ]:
                         xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text

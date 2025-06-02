@@ -2,6 +2,7 @@ import echolib
 
 import docker
 import time
+from load_demos import load_demos
 
 from threading import Thread, Lock
 
@@ -24,6 +25,14 @@ class DockerManager():
         self.stop        = False
 
         self.pyecho_loop.wait(10)
+
+        self.container_vram_usage = {
+            demo["dockerId"]: [demo["vramMin"],demo["vramMax"]]
+            for demo in map(lambda x: x["cfg"], load_demos().values())
+        }
+
+        self.vram_max = 16000 # 4060ti 16GB
+        self.vram_usage = 750 # reserve some memory for gui, host applications, etc.
         
         self.running_containers = dict()
 
@@ -56,6 +65,7 @@ class DockerManager():
                     print("Run container with id {}".format(command[1]))
                     
                     if command[1] in self.running_containers:
+                        self.ensure_vram(command[1])
                         print(f"Container {command[1]} already running ... will unpause it.")
                         # container should already be running - just unpause it
                         if self.running_containers[command[1]] is not None:
@@ -92,6 +102,7 @@ class DockerManager():
                             
                             if len(image.tags) > 0 and image.tags[0] == command[1]:
                                 print("Image with matching tag found...")
+                                self.ensure_vram(command[1])
 
                                 flag = self.__handle_container(command[1])
 
@@ -128,7 +139,10 @@ class DockerManager():
         print("self.active_container:", self.active_container)
         if self.active_container[0] is not None:
             try:
+                vramMin, vramMax = self.container_vram_usage[self.active_container[0]]
+                self.vram_usage -= vramMax
                 if do_pause:
+                    self.vram_usage += vramMin
                     print(f"Pausing active docker.")
                     self.active_container[1].pause()
                 else:    
@@ -151,10 +165,14 @@ class DockerManager():
         for id,container in self.running_containers.items():
             try:
                 container.stop()
+                vramMin, vramMax = self.container_vram_usage[id]
                 if self.active_container[0] == id:
+                    self.vram_usage -= vramMax
                     w = echolib.MessageWriter()
                     w.writeString(self.active_container[0])
                     self.pyecho_docker_stoped.send(w)
+                else:
+                    self.vram_usage -= vramMin
             except:
                 print("Error stopping docker container...")
 
@@ -178,6 +196,30 @@ class DockerManager():
         self.command.append(echolib.MessageReader(message).readString())
         print("Got command: {}".format(self.command))
         self.command_lock.release()
+        
+    def ensure_vram(self, tag):
+        print("ensure vram")
+        
+        vramMin, vramMax = self.container_vram_usage[tag]
+        if tag in self.running_containers:
+            vram_needed = self.vram_usage - vramMin + vramMax
+        else:
+            vram_needed = self.vram_usage + vramMax
+        
+        print(f"Projected VRAM usage: {vram_needed}/{self.vram_max}")
+        while vram_needed > self.vram_max:
+            # Always remove container with largest usage first
+            freed, tag = max([(self.container_vram_usage[t][0], t) for t in self.running_containers.keys()])
+            print(f"Removing {tag} to free {freed} MB")
+            self.running_containers.pop(tag).stop()
+
+            w = echolib.MessageWriter()
+            w.writeString(tag)
+            self.pyecho_docker_stoped.send(w)
+            vram_needed -= freed
+            print(f"Projected VRAM usage: {vram_needed}/{self.vram_max}")
+
+        self.vram_usage = vram_needed
 
 def main():
     dm = DockerManager()
