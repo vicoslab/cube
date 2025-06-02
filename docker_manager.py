@@ -145,6 +145,23 @@ class DockerManager():
 
             print("setting self.active_container to None")
             self.active_container[0] = self.active_container[1] = None
+    
+    
+    def stop_all_containers(self):
+        for id,container in self.running_containers.items():
+            try:
+                container.stop()
+                if self.active_container[0] == id:
+                    w = echolib.MessageWriter()
+                    w.writeString(self.active_container[0])
+                    self.pyecho_docker_stoped.send(w)
+            except:
+                print("Error stopping docker container...")
+
+            if self.active_container[0] == id:
+                self.active_container[0] = self.active_container[1] = None
+        
+        self.running_containers = dict()
 
     def __handle_container(self, tag):
         
@@ -179,7 +196,7 @@ def main():
     dm.stop = True
     th.join()
 
-    dm.stop_active_container()
+    dm.stop_all_containers()
     
 
 if __name__ == '__main__':
