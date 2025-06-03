@@ -20,6 +20,8 @@ class DockerManager():
         self.pyecho_docker_out = echolib.Publisher(self.pyecho_client, "dockerOut", "string")
         self.pyecho_docker_stoped = echolib.Publisher(self.pyecho_client, "docker_stoped", "string")
 
+        self.pyecho_docker_channel_out = echolib.Publisher(self.pyecho_client, "docker_demo_command_input", "int")
+
         self.command     = []
         self.command_lock = Lock()
         self.stop        = False
@@ -143,6 +145,14 @@ class DockerManager():
                 self.vram_usage -= vramMax
                 if do_pause:
                     self.vram_usage += vramMin
+                    # make sure demo is not processing befor pausing it
+                    if self.pyecho_docker_channel_out is not None:
+                        writer = echolib.MessageWriter()
+                        writer.writeInt(0) # command to disable processing
+                        self.pyecho_docker_channel_out.send(writer)
+                    # doesn't look like its needed
+                    # time.sleep(1.5)
+                    
                     print(f"Pausing active docker.")
                     self.active_container[1].pause()
                 else:    
