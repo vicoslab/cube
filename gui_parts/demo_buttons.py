@@ -4,17 +4,6 @@ from gui_parts.icons import Icons
 
 #### Click animation
 
-main_scale_up = AnimationList(
-    transform = ("scale", [0.265, 0.095]),
-    on_end = lambda c, g, u: c.animation_play(animation_to_play = "scale_down"),
-    duration  = 0.2,
-    id = "scale_up")
-
-main_scale_down = AnimationList(
-    transform = ("scale", [0.26, 0.09]),
-    duration  = 0.2,
-    id = "scale_down")
-
 video_scale_up = AnimationList(
     transform = ("scale", [0.075, 0.095]),
     on_end = lambda c, g, u: c.animation_play(animation_to_play = "scale_down"),
@@ -45,7 +34,6 @@ def create_demo_buttons(icons: Icons, demos, id: str, position, aspect_ratio, fo
         scale  = [0.26, 0.09],
         depth  = 0.83,
         colour     = Colours.VICOS_RED,
-        animations = { main_scale_up.id: main_scale_up, main_scale_down.id: main_scale_down },
         id = id)
 
     button_video = Button(
