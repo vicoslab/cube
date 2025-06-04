@@ -27,10 +27,11 @@ def load_demos(root: str = "./demos") -> dict:
             module_path = "demos." + demo_name + "." + "scene"
             module = import_module(module_path)
 
-            attrs = [ "demoId", "dockerId", "video", "icon", "vramMin", "vramMax" ]
+            attrs = [ "demoId", "dockerId", "video", "icon", "vramMin", "vramMax", "nopause" ]
             attrs_highlight = [ f"highlight-{lang}" for lang in languages ]
 
             xml_valid_dict = { tag: False for tag in attrs + attrs_highlight }
+            xml_valid_dict["nopause"] = True # optional flag
             scene_valid = hasattr(module, "get_scene")
 
             xml_path = demo_root + "/cfg.xml"
@@ -51,6 +52,8 @@ def load_demos(root: str = "./demos") -> dict:
                     elif xml_c.tag in [ "video", "icon" ]:
                         xml_parsed[xml_c.tag] = demo_root + "/" + xml_c.text
                         xml_valid_dict[xml_c.tag] = True
+                    elif xml_c.tag in [ "nopause" ]:
+                        xml_parsed[xml_c.tag] = True
             xml_valid = all(xml_valid_dict.values())
                         
             if xml_valid and scene_valid:

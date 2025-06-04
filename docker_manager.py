@@ -29,7 +29,7 @@ class DockerManager():
         self.pyecho_loop.wait(10)
 
         self.container_vram_usage = {
-            demo["dockerId"]: [demo["vramMin"],demo["vramMax"]]
+            demo["dockerId"]: [demo["vramMin"],demo["vramMax"], "nopause" in demo]
             for demo in map(lambda x: x["cfg"], load_demos().values())
         }
 
@@ -141,9 +141,9 @@ class DockerManager():
         print("self.active_container:", self.active_container)
         if self.active_container[0] is not None:
             try:
-                vramMin, vramMax = self.container_vram_usage[self.active_container[0]]
+                vramMin, vramMax, nopause = self.container_vram_usage[self.active_container[0]]
                 self.vram_usage -= vramMax
-                if do_pause:
+                if do_pause and not nopause:
                     self.vram_usage += vramMin
                     # make sure demo is not processing befor pausing it
                     if self.pyecho_docker_channel_out is not None:
@@ -175,7 +175,7 @@ class DockerManager():
         for id,container in self.running_containers.items():
             try:
                 container.stop()
-                vramMin, vramMax = self.container_vram_usage[id]
+                vramMin, vramMax, _ = self.container_vram_usage[id]
                 if self.active_container[0] == id:
                     self.vram_usage -= vramMax
                     w = echolib.MessageWriter()
@@ -210,7 +210,7 @@ class DockerManager():
     def ensure_vram(self, tag):
         print("ensure vram")
         
-        vramMin, vramMax = self.container_vram_usage[tag]
+        vramMin, vramMax, _ = self.container_vram_usage[tag]
         if tag in self.running_containers:
             vram_needed = self.vram_usage - vramMin + vramMax
         else:
