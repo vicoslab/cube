@@ -34,7 +34,7 @@ class DockerManager():
         }
 
         self.vram_max = 16000 # 4060ti 16GB
-        self.vram_usage = 750 # reserve some memory for gui, host applications, etc.
+        self.vram_usage = 1000 # reserve some memory for gui, host applications, etc.
         
         self.running_containers = dict()
 
@@ -146,10 +146,10 @@ class DockerManager():
                 if do_pause and not nopause:
                     self.vram_usage += vramMin
                     # make sure demo is not processing befor pausing it
-                    if self.pyecho_docker_channel_out is not None:
-                        writer = echolib.MessageWriter()
-                        writer.writeInt(0) # command to disable processing
-                        self.pyecho_docker_channel_out.send(writer)
+                    # if self.pyecho_docker_channel_out is not None:
+                    #     writer = echolib.MessageWriter()
+                    #     writer.writeInt(0) # command to disable processing
+                    #     self.pyecho_docker_channel_out.send(writer)
                     # doesn't look like its needed
                     # time.sleep(1.5)
                     

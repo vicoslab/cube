@@ -47,6 +47,9 @@ def stop_container(state: State, demos, id):
     '''
     Stop container of demo ``id`` and set it as active
     '''
+    if state.echolib_handler.docker_channel_out is not None:
+        # stop processing
+        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, 0))
     docker_command = "{} {}".format(-1, demos[id]["cfg"]["dockerId"])
     state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
     state.active_demo = None
