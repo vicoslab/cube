@@ -23,6 +23,8 @@ class EcholibHandler:
         self.docker_stopped    = echolib.Subscriber(self.client,  "docker_stoped", "string", self.__callback_stop)
 
         ###########################
+        
+        self.docker_points_out = echolib.Publisher(self.client, "docker_demo_points_input", "string")
 
         # Structures used for interfacing with the 
         #
@@ -63,8 +65,14 @@ class EcholibHandler:
 
     def run(self):
         
-        while self.loop.wait(10) and self.running:
-	    
+        while self.running:
+            
+            try:
+                if not self.loop.wait(10):
+                    break
+            except:
+                print("Error")
+            
             self.commands_lock.acquire()
             if len(self.docker_commands) > 0:
                 
@@ -132,7 +140,7 @@ class EcholibHandler:
         self.docker_image = message.image
         self.docker_image_new = True
 
-        print("Got demo containter output!")
+        #print("Got demo containter output!")
 
     def __callback_ready(self, message):
 

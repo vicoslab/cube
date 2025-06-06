@@ -26,6 +26,10 @@ class State():
         self.active_demo = None
         self.status = None
 
+        # flag that gets set when a demo is started
+        # demos can use this to do something differently first time, and then set it to false
+        self.demo_start = True
+
         self.default_camera_aspect_ratio = 4024.0/3036.0
 
     def get_aspect_ratio(self) -> float:

@@ -122,7 +122,7 @@ class DockerManager():
                                     self.active_container[0] = command[1]
                                     self.active_container[1] = self.docker.containers.run(image.id,\
                                         device_requests=[docker.types.DeviceRequest(count=1, driver="nvidia", capabilities=[['gpu']])],\
-                                        remove=False, detach=True,\
+                                        detach=True,\
                                         volumes = {"/tmp/echo.sock" : {"bind" : "/tmp/echo.sock", "mode" : "rw"}},\
                                         log_config = docker.types.LogConfig(type=docker.types.LogConfig.types.JSON), 
                                         environment=dict(PYTHONUNBUFFERED=1),

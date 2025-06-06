@@ -200,7 +200,7 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
     def on_click_demo_button(button: Button, gui: Gui, state: State):
         
         demo_key = button.id
-        button.animation_play(animation_to_play = "scale_up")
+        state.demo_start = True
 
         if state.active_demo is None:
             start_container(state, demos, demo_key)
