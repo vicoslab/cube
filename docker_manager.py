@@ -146,12 +146,13 @@ class DockerManager():
                 if do_pause and not nopause:
                     self.vram_usage += vramMin
                     # make sure demo is not processing befor pausing it
-                    # if self.pyecho_docker_channel_out is not None:
-                    #     writer = echolib.MessageWriter()
-                    #     writer.writeInt(0) # command to disable processing
-                    #     self.pyecho_docker_channel_out.send(writer)
-                    # doesn't look like its needed
-                    # time.sleep(1.5)
+                    # the main gui should already be sending this, but this is just in case
+                    if self.pyecho_docker_channel_out is not None:
+                        writer = echolib.MessageWriter()
+                        writer.writeInt(0) # command to disable processing
+                        self.pyecho_docker_channel_out.send(writer)
+
+                    time.sleep(0.25)
                     
                     print(f"Pausing active docker.")
                     self.active_container[1].pause()
