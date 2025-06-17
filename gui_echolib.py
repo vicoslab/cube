@@ -24,8 +24,10 @@ class EcholibHandler:
 
         ###########################
         
-        self.docker_points_out = echolib.Publisher(self.client, "docker_demo_points_input", "string")
-
+        # Demo-specific publishers ; do not create publishers in the main thread
+        self.demo_counting_bboxes = echolib.Publisher(self.client, "counting_bboxes", "SharedTensor")
+        self.demo_counting_threshold = echolib.Publisher(self.client, "counting_threshold", "float")
+        
         # Structures used for interfacing with the 
         #
         #
@@ -39,6 +41,8 @@ class EcholibHandler:
         self.camera_stream_image_new = False
         self.camera_stream_image   = None
         self.camera_stream_counter = 0
+
+        self.camera_control_ptz = echolib.Publisher(self.client, "camera_control_ptz", "string")
 
         ###########################
 
@@ -76,17 +80,26 @@ class EcholibHandler:
             self.commands_lock.acquire()
             if len(self.docker_commands) > 0:
                 
-                command = self.docker_commands.pop(0)
+                channel, value = self.docker_commands.pop(0)
 
-                print(f"Processing docker command -> {command[1]}")
-                
+                print(f"Processing docker command -> {value}")
+
                 writer = echolib.MessageWriter()
-                if type(command[1]) is str:
-                    writer.writeString(command[1])
-                elif type(command[1]) is int:
-                    writer.writeInt(command[1])
+                if type(value) is str:
+                    writer.writeString(value)
+                elif type(value) is int:
+                    writer.writeInt(value)
+                elif type(value) is np.ndarray:
+                    echolib._echo.writeTensor(writer, value)
+                elif type(value) is float:
+                    writer.writeFloat(value)
+                else:
+                    print(f"EcholibHandler: incompatible type {type(value)} in append_command")
+                    self.commands_lock.release() 
+                    time.sleep(0.01)
+                    continue
 
-                command[0].send(writer)
+                channel.send(writer)
 
             if len(self.camera_commands) > 0:
                 
