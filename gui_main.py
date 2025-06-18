@@ -288,9 +288,6 @@ def main():
         
         gui.swap_buffers()
 
-        # Resets camera image so no unecessary re-renders are done
-        state.echolib_handler.set_camera_to_none()
-
         if gui.should_window_resize():
             config["main"]["width"] = str(gui.width)
             config["main"]["height"] = str(gui.height)
