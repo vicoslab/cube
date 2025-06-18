@@ -19,6 +19,10 @@ ax_text_content = {
     Language.EN: "Automatic exposure",
     Language.SL: "Samodejna osvetlitev"
 }
+awb_text_content = {
+    Language.EN: "Automatic  balance",
+    Language.SL: "Samodejna raven beline"
+}
 slider_awb_text_content = {
     Language.EN: "White balance: {:.2f}",
     Language.SL: "Raven beline: {:.2f}"
@@ -48,15 +52,15 @@ def create_calibration_menu(state: State, font, aspect_ratio):
 
     def get_zoom(gui: Gui, state: State):
 
-        zoom_margin_y = 800
-        zoom_maring_x = np.int32(np.floor(zoom_margin_y/state.get_aspect_ratio()))
+        zoom_margin_y = 400
+        zoom_margin_x = np.int32(np.floor(zoom_margin_y/state.get_aspect_ratio()))
 
         image = state.echolib_handler.get_camera_stream()
 
         if image is None:
             return None
 
-        return image[zoom_maring_x:-zoom_maring_x, zoom_margin_y:-zoom_margin_y, :]
+        return image[zoom_margin_x:-zoom_margin_x, zoom_margin_y:-zoom_margin_y, :]
 
     def get_display(position, scale, title, get_texture, id):
 
@@ -111,10 +115,6 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         colour = Colours.VICOS_RED,
         id = "button_awb")
 
-    awb_text_content = {
-        Language.EN: "Automatic  balance",
-        Language.SL: "Samodejna raven beline"
-    }
     def awb_text_language_callback(field, lang):
         field.set_text(font = font, text = awb_text_content[lang])
         field.center_x()
