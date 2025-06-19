@@ -53,6 +53,18 @@ class TextFieldMultilingual(TextField):
             self.language = custom_data.language
             self.language_callback(self, self.language)
 
+    def set_text(self, font: dict, text: str):
+        super().set_text(font, text)
+        return self
+
+    def center_x(self):
+        super().center_x()
+        return self
+
+    def center_y(self):
+        super().center_y()
+        return self
+
 
 slider_to_red = AnimationList(
     transform = ("colour", Colours.VICOS_RED),

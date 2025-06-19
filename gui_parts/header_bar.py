@@ -27,13 +27,13 @@ def create_header(state, demos, header_height, aspect_ratio, font):
     
     header_bar_demo_text.status = None
     header_bar_demo_text.set_text(font = font, text = header_bar_demo_text_default[state.language])
+    header_bar_demo_text.center_y()
         
     def check_status(parent: Element, gui: Gui, custom_data: State):
         state = custom_data
         if header_bar_demo_text.status != state.status:
             header_bar_demo_text.status = state.status
             header_bar_demo_text.set_text(font = font, text = state.status or header_bar_demo_text_default[state.language])
-            header_bar_demo_text.center_y()
     
     header_bar_demo_text.command_chain.insert(0, check_status)
     header_bar_demo_text.depends_on(element = header_bar)
