@@ -3,35 +3,35 @@ from opengl_gui.gui_components import Container, Gui, DisplayTexture, Button, Ra
 import time
 import numpy as np
 
-calibration_title_content = {
+i8n_calibration_menu_title = {
     Language.EN: "Camera calibration",
     Language.SL: "Kalibracija kamere"
 }
-label_advanced_mode = {
+i8n_per_demo_config = {
     Language.EN: "Per-demo config",
     Language.SL: "Za vsak demo ločeno"
 }
-d_original_content = {
+i8n_camera_feed_orig = {
     Language.EN: "Original size",
     Language.SL: "Originalna velikost"
 }
-d_zoom_content = {
+i8n_camera_feed_zoom = {
     Language.EN: "Enlarged size",
     Language.SL: "Povečana velikost"
 }
-ax_text_content = {
+i8n_auto_exposure = {
     Language.EN: "Automatic exposure",
     Language.SL: "Samodejna osvetlitev"
 }
-awb_text_content = {
+i8n_auto_white_bal = {
     Language.EN: "Automatic  balance",
     Language.SL: "Samodejna raven beline"
 }
-slider_awb_text_content = {
+i8n_white_balance = {
     Language.EN: "White balance: {:.2f}",
     Language.SL: "Raven beline: {:.2f}"
 }
-slider_ax_text_content = {
+i8n_exposure = {
     Language.EN: "Exposure time: {:.3f} ms",
     Language.SL: "Čas osvetlitve: {:.3f} ms"
 }
@@ -39,7 +39,7 @@ slider_ax_text_content = {
 def create_calibration_menu(state: State, font, aspect_ratio):
 
     def calibration_title_language_callback(field, lang):
-        field.set_text(font = font, text = calibration_title_content[lang])
+        field.set_text(font = font, text = i8n_calibration_menu_title[lang])
         field.center_x()
     calibration_title = TextFieldMultilingual(
         position = [0.05, 0.05],
@@ -55,7 +55,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         colour = [0.8, 0.8, 0.8, 0.75],
         aspect_ratio = aspect_ratio,
         id = "advanced_mode",
-        language_callback = lambda field, lang: field.set_text(font = font, text = label_advanced_mode[lang]))
+        language_callback = lambda field, lang: field.set_text(font = font, text = i8n_per_demo_config[lang]))
     def advanced_mode_on_click(button, gui, custom_data):
         if button.mouse_click_count % 2 == 0:
             custom_data.advanced_mode = False
@@ -121,15 +121,15 @@ def create_calibration_menu(state: State, font, aspect_ratio):
 
         return calibration_live_feed_container
 
-    d_original = get_display(position = [0.025, 0.28], scale = 0.62, title = d_original_content, get_texture = get_original, id = 0)
-    d_zoom     = get_display(position = [0.51,  0.28], scale = 0.62, title = d_zoom_content,   get_texture = get_zoom, id = 1)
+    d_original = get_display(position = [0.025, 0.28], scale = 0.62, title = i8n_camera_feed_orig, get_texture = get_original, id = 0)
+    d_zoom     = get_display(position = [0.51,  0.28], scale = 0.62, title = i8n_camera_feed_zoom, get_texture = get_zoom, id = 1)
 
     button_container = Container(
         position = [0.01, 0.08],
         scale  = [1.0, 0.2],
         depth  = 0.97,
         colour = [1.0, 1.0, 1.0, 0.5],
-        id = "button_contianer")
+        id = "button_container")
 
     button_container.command_chain.pop(1)
 
@@ -141,7 +141,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         id = "button_awb")
 
     def awb_text_language_callback(field, lang):
-        field.set_text(font = font, text = awb_text_content[lang])
+        field.set_text(font = font, text = i8n_auto_white_bal[lang])
         field.center_x()
         field.center_y()
     button_awb_text = TextFieldMultilingual(
@@ -162,7 +162,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         id = "button_ax")
 
     def ax_text_language_callback(field, lang):
-        field.set_text(font = font, text = ax_text_content[lang])
+        field.set_text(font = font, text = i8n_auto_exposure[lang])
         field.center_x()
         field.center_y()
     button_ax_text = TextFieldMultilingual(
@@ -220,7 +220,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
             slider_ax.set_value(float(camera_properties["ExposureTime"][0]))
 
     def slider_awb_text_language_callback(field, lang):
-        field.set_text(font = font, text = slider_awb_text_content[lang].format(slider_awb.selected_value))
+        field.set_text(font = font, text = i8n_white_balance[lang].format(slider_awb.selected_value))
     slider_awb_text = TextFieldMultilingual(
         position = [0.575, 0.3],
         text_scale = 0.68,
@@ -230,7 +230,7 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         language_callback=slider_awb_text_language_callback)
 
     def slider_ax_text_language_callback(field, lang):
-        field.set_text(font = font, text = slider_ax_text_content[lang].format(slider_ax.selected_value*1e-6))
+        field.set_text(font = font, text = i8n_exposure[lang].format(slider_ax.selected_value*1e-6))
     slider_ax_text = TextFieldMultilingual(
         position = [0.76, 0.3],
         text_scale = 0.68,
