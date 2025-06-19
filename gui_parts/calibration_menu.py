@@ -1,4 +1,4 @@
-from gui_components import Language, TextFieldMultilingual, Colours, SettableRangeSlider, State
+from gui_components import Language, TextFieldMultilingual, Colours, SettableRangeSlider, State, Toggle
 from opengl_gui.gui_components import Container, Gui, DisplayTexture, Button, RangeSlider
 import time
 import numpy as np
@@ -6,6 +6,10 @@ import numpy as np
 calibration_title_content = {
     Language.EN: "Camera calibration",
     Language.SL: "Kalibracija kamere"
+}
+label_advanced_mode = {
+    Language.EN: "Per-demo config",
+    Language.SL: "Za vsak demo ločeno"
 }
 d_original_content = {
     Language.EN: "Original size",
@@ -44,6 +48,27 @@ def create_calibration_menu(state: State, font, aspect_ratio):
         aspect_ratio = aspect_ratio,
         id = "calibration_title",
         language_callback = calibration_title_language_callback)
+
+    advanced_mode = TextFieldMultilingual(
+        position = [0.75, 0.05],
+        text_scale = 0.68,
+        colour = [0.8, 0.8, 0.8, 0.75],
+        aspect_ratio = aspect_ratio,
+        id = "advanced_mode",
+        language_callback = lambda field, lang: field.set_text(font = font, text = label_advanced_mode[lang]))
+    def advanced_mode_on_click(button, gui, custom_data):
+        if button.mouse_click_count % 2 == 0:
+            custom_data.advanced_mode = False
+        else:
+            custom_data.advanced_mode = True
+    advanced_mode_toggle = Toggle(
+        position = [0.95, 0.02],
+        id = "advanced_mode_toggle",
+        scale = [0.04, 0.04],
+        initial_state = int(state.advanced_mode),
+        aspect_ratio = aspect_ratio,
+        on_click = advanced_mode_on_click
+    )
 
     # Create live feed component
 
@@ -310,4 +335,4 @@ def create_calibration_menu(state: State, font, aspect_ratio):
     slider_awb_text.depends_on(element = button_container)
     slider_ax_text.depends_on(element = button_container)
 
-    return [d_original, d_zoom, calibration_title, button_container]
+    return [d_original, d_zoom, calibration_title, advanced_mode, advanced_mode_toggle, button_container]

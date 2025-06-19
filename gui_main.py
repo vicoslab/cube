@@ -204,7 +204,8 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
 
         if state.active_demo is None:
             start_container(state, demos, demo_key)
-            apply_demo_config(demo_key, state)
+            if state.advanced_mode:
+                apply_demo_config(demo_key, state)
             
             display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), state.get_aspect_ratio()), active_demo_button = button)
 
@@ -228,7 +229,8 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
 
                 stop_container(state, demos, state.active_demo)
                 start_container(state, demos, demo_key)
-                apply_demo_config(demo_key, state)
+                if state.advanced_mode:
+                    apply_demo_config(demo_key, state)
 
                 display_screen.insert_active_demo(active_demo = demo_scene_wrapper(aspect_ratio, demos[demo_key]["get_scene"](parameters), state.get_aspect_ratio()), active_demo_button = button)
 

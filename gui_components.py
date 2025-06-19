@@ -1,5 +1,5 @@
 from enum import Enum
-from opengl_gui.gui_components import TextField, RangeSlider, Container, DrawerMenu, AnimationList, AnimationScalar, Gui
+from opengl_gui.gui_components import *
 import numpy as np
 
 class Colours():
@@ -23,6 +23,7 @@ class State():
         self.echolib_handler = echolib_handler
         self.language = Language.SL
         self.config = config
+        self.advanced_mode = False
         self.active_demo = None
         self.status = None
 
@@ -30,7 +31,7 @@ class State():
         # demos can use this to do something differently first time, and then set it to false
         self.demo_start = True
 
-        self.default_camera_aspect_ratio = 4024.0/3036.0
+        self.default_camera_aspect_ratio = 2012.0/1518.0
 
     def get_aspect_ratio(self) -> float:
         return self.default_camera_aspect_ratio
@@ -160,3 +161,56 @@ def setup_drawer_close_animation (drawer: DrawerMenu, drawer_container: Containe
         on_end    = on_end,
         duration  = 0.5,
         id        = id)
+
+class Toggle(Button):
+    def __init__(self, aspect_ratio: float, bg_colours=[[*Colours.VICOS_GRAY[:3],1], [*Colours.VICOS_RED[:3],1]], thumb_colour=Colours.WHITE, initial_state=0, **kwargs):
+        kwargs["colour"] = [0,0,0,0]
+        super().__init__(**kwargs)
+        self.mouse_click_count = initial_state
+        scale_x, scale_y = kwargs["scale"]
+
+        duration = 0.15
+        # Seems to crash if they share it so we create one for each of them
+        bg_animations = lambda: {
+            "off": AnimationList(transform=("colour", bg_colours[0]), id="off", duration=duration),
+            "on": AnimationList(transform=("colour", bg_colours[1]), id="on", duration=duration)
+        }
+        self._circle_l = Circle(position=[0,0], scale=[scale_y/aspect_ratio,scale_y], colour=bg_colours[initial_state], id=kwargs["id"]+"_circle_l", animations=bg_animations())
+        self._circle_r = Circle(position=[1,0], scale=[scale_y/aspect_ratio,scale_y], colour=bg_colours[initial_state], id=kwargs["id"]+"_circle_l", animations=bg_animations())
+        self._circle_r.offset[0] = -2*self._circle_r.scale[0]
+        self._middle = Container(position=[0,0], scale=[scale_x-scale_y/aspect_ratio,scale_y], colour=bg_colours[initial_state], id=kwargs["id"]+"_middle", animations=bg_animations())
+        self._middle.center_x()
+        self._middle.colour[3] = 1
+
+        thumb_scale = [0.8*scale_y/aspect_ratio,0.8*scale_y]
+        offset = { "start": 0, "end": -2*thumb_scale[0] }
+        position = { "start": 0.025, "end": 0.975 }
+        thumb_animations = {
+            "offset_0": AnimationListOne(transform=("offset", offset["start"]), id="offset_0", index=0, duration=duration),
+            "offset_1": AnimationListOne(transform=("offset", offset["end"]), id="offset_1", index=0, duration=duration),
+            "position_0": AnimationListOne(transform=("position",position["start"]), id="position_0", index=0, duration=duration),
+            "position_1": AnimationListOne(transform=("position",position["end"]), id="position_1", index=0, duration=duration)
+        }
+
+        self._thumb = Circle(position=[position["start" if initial_state == 0 else "end"],0], scale=thumb_scale, colour=thumb_colour, id=kwargs["id"]+"_circle_l", animations=thumb_animations)
+        self._thumb.center_y()
+        self._thumb.offset[0] = offset["start" if initial_state == 0 else "end"]
+
+        self._circle_l.depends_on(self)
+        self._circle_r.depends_on(self)
+        self._middle.depends_on(self)
+        self._thumb.depends_on(self)
+
+    def element_update(self, parent, gui: Gui, custom_data):
+        old = self.mouse_click_count
+        super().element_update(parent, gui, custom_data)
+
+        if self.mouse_click_count != old:
+            value = self.mouse_click_count % 2
+            # self._thumb.position[0] = 0.025 if value == 0 else 0.975
+            # self._thumb.offset[0] = 0 if value == 0 else -2*self._thumb.scale[0]
+            for el in [self._circle_l, self._circle_r, self._middle]:
+                el.animation_play("off" if value == 0 else "on")
+            self._thumb.animation_play(f"offset_{value}")
+            self._thumb.animation_play(f"position_{value}")
+            # self._thumb.update_geometry(self)
