@@ -39,6 +39,8 @@ def start_container(state: State, demos, id):
     '''
     Start container of demo ``id`` and set it as active
     '''
+    # Reset image return after demo is switched or terminated
+    state.echolib_handler.docker_channel_ready = False
     docker_command = "{} {}".format(1, demos[id]["cfg"]["dockerId"])
     state.echolib_handler.append_command((state.echolib_handler.docker_publisher, docker_command))
     state.active_demo = id
@@ -236,8 +238,6 @@ def scene_primary(window_width: int, window_height: int, state: State, font: dic
 
                 button.set_colour(colour = Colours.VICOS_GRAY)
                 state.status = demos[demo_key]["cfg"][f"highlight-{state.language}"]
-
-        state.echolib_handler.docker_channel_ready = False # Reset image return after demo is switched or terminated
         
         if drawer_menu.open:
             drawer_menu_container.animation_play(animation_to_play = "close")
