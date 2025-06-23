@@ -38,7 +38,10 @@ class DockerManager():
         
         self.running_containers = dict()
 
+        # this one is effectively here as well, but gets recreated and deleted during runtime
+        # self.docker_ready_sub = echolib.Subscriber(self.pyecho_client, "containerReady", "int", self.__container_ready)
         self.docker_ready      = echolib.Publisher(self.pyecho_client, "containerReady", "int")
+        self.expecting_ready = False
 
     def process(self):
 
@@ -105,6 +108,8 @@ class DockerManager():
                             if len(image.tags) > 0 and image.tags[0] == command[1]:
                                 print("Image with matching tag found...")
                                 self.ensure_vram(command[1])
+                                self.expecting_ready = True
+                                self.docker_ready_sub = echolib.Subscriber(self.pyecho_client, "containerReady", "int", self.__container_ready)
 
                                 flag = self.__handle_container(command[1])
 
@@ -143,7 +148,7 @@ class DockerManager():
             try:
                 vramMin, vramMax, nopause = self.container_vram_usage[self.active_container[0]]
                 self.vram_usage -= vramMax
-                if do_pause and not nopause:
+                if do_pause and not nopause and not self.expecting_ready:
                     self.vram_usage += vramMin
                     # make sure demo is not processing befor pausing it
                     # the main gui should already be sending this, but this is just in case
@@ -200,6 +205,13 @@ class DockerManager():
             return True
 
         return False
+
+    def __container_ready(self, message):
+        reader = echolib.MessageReader(message)
+        if reader.readInt() == 1 and self.expecting_ready:
+            self.expecting_ready = False
+            del self.docker_ready_sub
+            self.docker_ready_sub = None
 
     def __callback(self, message):
 
