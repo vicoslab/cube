@@ -2,6 +2,7 @@ from threading import Thread, Lock
 
 import echolib
 from echolib.camera import FrameSubscriber
+from echolib.array import TensorPublisher
 
 import time
 import numpy as np
@@ -25,7 +26,7 @@ class EcholibHandler:
         ###########################
         
         # Demo-specific publishers ; do not create publishers in the main thread
-        self.demo_counting_bboxes = echolib.Publisher(self.client, "counting_bboxes", "SharedTensor")
+        self.demo_counting_bboxes = TensorPublisher(self.client, "counting_bboxes")
         self.demo_counting_threshold = echolib.Publisher(self.client, "counting_threshold", "float")
         
         # Structures used for interfacing with the 
@@ -90,7 +91,10 @@ class EcholibHandler:
                 elif type(value) is int:
                     writer.writeInt(value)
                 elif type(value) is np.ndarray:
-                    echolib._echo.writeTensor(writer, value)
+                    channel.send(value)
+                    self.commands_lock.release()
+                    time.sleep(0.01)
+                    continue
                 elif type(value) is float:
                     writer.writeFloat(value)
                 else:
